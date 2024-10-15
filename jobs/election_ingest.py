@@ -111,7 +111,7 @@ def spar(input_path, output_path):
 def ler(input_csv_path):
     SPARK = SparkSession.builder.appName(APP_NAME).getOrCreate()
     actual = SPARK.read.parquet(input_csv_path)
-    actual.select("Seção Eleitoral").distinct().show(truncate=False)
+    #actual.show(actual.count(), truncate=False)
 
    # actual.show(truncate=False)
 
@@ -119,8 +119,8 @@ def ler(input_csv_path):
 # Função principal
 def main(input_path, output_path, uf):
     logging.info("Aplicação inicializada: " + APP_NAME)
-    spar(input_path, output_path)
-   # ler("out/")
+    #spar(input_path, output_path)
+    ler("out/")
     #download_and_unzip(uf, input_path)
     #process_extracted_logs(input_path)
     #generate_output_csv(input_path, output_path, uf)

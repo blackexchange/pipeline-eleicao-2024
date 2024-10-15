@@ -147,6 +147,8 @@ def run(spark: SparkSession, ingest_path: str, output_path: str) -> int:
 
     )
     df_final.write.mode("overwrite").parquet(output_path)
+    df_final.write.mode("overwrite").csv(output_path +"/csv/log_urna.csv")
+
     df_final.show(5, truncate=False)
     return df_final.count()
 

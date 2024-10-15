@@ -25,8 +25,8 @@ switch($jobName)
             Break
             }
 
-        election {
-            $INPUT_FILE_PATH="./resources/election/log"
+    election {
+            $INPUT_FILE_PATH="./in/logs"
             $JOB_ENTRY_POINT="./jobs/election_ingest.py"
             $OUTPUT_PATH="./out"
             $UF="TO"
