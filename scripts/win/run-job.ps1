@@ -24,6 +24,14 @@ switch($jobName)
             $OUTPUT_PATH="./output"
             Break
             }
+
+        election {
+            $INPUT_FILE_PATH="resources/election/TO.csv"
+            $JOB_ENTRY_POINT="jobs/election_ingest.py"
+            $OUTPUT_PATH="./out2"
+            Break
+            }
+            
     default {
               Write-Host "Job name provided was : ${JOB} : failed"
               Write-Host "Job name deduced was : ${jobName} : failed"
@@ -36,6 +44,6 @@ switch($jobName)
 }
 
 
-rm -rf $OUTPUT_PATH
+rm -r -Force $OUTPUT_PATH
 
 poetry run spark-submit --master local --py-files dist/data_transformations-*.whl $JOB_ENTRY_POINT $INPUT_FILE_PATH $OUTPUT_PATH

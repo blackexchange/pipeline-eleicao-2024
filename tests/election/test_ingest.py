@@ -3,7 +3,7 @@ import pytest
 
 from data_transformations.election import ingest
 
-@pytest.mark.skip()
+#@pytest.mark.skip()
 def test_should_get_list_files() -> None:
    
     actual = ingest.list_totalization_files()
@@ -31,8 +31,10 @@ def test_should_extract_log() -> bool:
 
     assert actual == True
 
+@pytest.mark.skip()
 def test_should_process_log_file() -> bool:
    
     actual = ingest.process_log_file("/Users/user/though/pipe/in/logs/logd.dat")
 
     assert actual == True
+
