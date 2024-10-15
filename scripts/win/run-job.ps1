@@ -26,9 +26,10 @@ switch($jobName)
             }
 
         election {
-            $INPUT_FILE_PATH="resources/election/TO.csv"
-            $JOB_ENTRY_POINT="jobs/election_ingest.py"
-            $OUTPUT_PATH="./out2"
+            $INPUT_FILE_PATH="./resources/election/log"
+            $JOB_ENTRY_POINT="./jobs/election_ingest.py"
+            $OUTPUT_PATH="./out"
+            $UF="TO"
             Break
             }
             
@@ -43,7 +44,10 @@ switch($jobName)
 
 }
 
+if (Test-Path $OUTPUT_PATH) {
+    Remove-Item -Recurse -Force $OUTPUT_PATH
+}
 
-rm -r -Force $OUTPUT_PATH
+poetry run spark-submit --conf spark.pyspark.python="C:\Users\Neville\AppData\Local\pypoetry\Cache\virtualenvs\scrap-video-7xC0EiYu-py3.11\Scripts\python.exe" --master local --py-files dist/data_transformations-*.whl $JOB_ENTRY_POINT $INPUT_FILE_PATH $OUTPUT_PATH $UF
 
-poetry run spark-submit --master local --py-files dist/data_transformations-*.whl $JOB_ENTRY_POINT $INPUT_FILE_PATH $OUTPUT_PATH
+#poetry run spark-submit --master local --py-files dist/data_transformations-*.whl $JOB_ENTRY_POINT $INPUT_FILE_PATH $OUTPUT_PATH --conf "spark.pyspark.python=$(poetry run where python)"

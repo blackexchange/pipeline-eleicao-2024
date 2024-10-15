@@ -1,3 +1,9 @@
+# Dados Eleição 2024
+https://dadosabertos.tse.jus.br/
+
+https://resultados.tse.jus.br/oficial/app/index.html#/eleicao;e=e619;uf=to;mu=73008;ufbu=to;mubu=73008;zn=0007;se=0135;tipo=3/dados-de-urna/boletim-de-urna
+
+
 # Data transformations with Python
 This is a collection of _Python_ jobs that are supposed to transform data.
 These jobs are using _PySpark_ to process larger volumes of data and are supposed to run on a _Spark_ cluster (via `spark-submit`).
@@ -59,6 +65,24 @@ There are two applications in this repo: Word Count, and Citibike.
 
 Currently, these exist as skeletons, and have some initial test cases which are defined but ignored.
 For each application, please un-ignore the tests and implement the missing logic.
+
+
+### Election
+Eleição 2024
+
+
+#### Input
+Pastas com os logs das urnas
+
+#### Output
+`*.parquet` files containing the same content
+
+
+#### Run the job
+Please make sure to package the code before submitting the spark job (`poetry build`)
+```bash
+poetry run spark-submit --master local  --py-files dist/data_transformations-*.whl jobs/election.py resources/election/log out TO
+```
 
 ### Word Count
 A NLP model is dependent on a specific input file. This job is supposed to preprocess a given text file to produce this

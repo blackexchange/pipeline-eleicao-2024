@@ -104,7 +104,7 @@ def spar(input_path, output_path):
     spark = SparkSession.builder.appName(APP_NAME).getOrCreate()
     sc = spark.sparkContext
    
-    ingest.run(spark, input_path + "/test", output_path)
+    ingest.run(spark, input_path, output_path)
     spark.stop()
 
 
@@ -119,8 +119,8 @@ def ler(input_csv_path):
 # Função principal
 def main(input_path, output_path, uf):
     logging.info("Aplicação inicializada: " + APP_NAME)
-    #spar(input_path, output_path)
-    ler("out/")
+    spar(input_path, output_path)
+   # ler("out/")
     #download_and_unzip(uf, input_path)
     #process_extracted_logs(input_path)
     #generate_output_csv(input_path, output_path, uf)

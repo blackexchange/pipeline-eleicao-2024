@@ -105,122 +105,51 @@ def extract_log_text(zip_path, extract_to):
         return False
 
 
-def run(spark: SparkSession, ingest_path: str, output_path: str) -> None:
+def run(spark: SparkSession, ingest_path: str, output_path: str) -> int:
     print(f"Gerando DataFrame no Spark...")
 
     schema = StructType([
-        StructField("Data e Hora", StringType(), True),
-        StructField("Log Level", StringType(), True),
-        StructField("Código Urna", StringType(), True),
-        StructField("Ação", StringType(), True),
+        StructField("DataHora", StringType(), True),
+        StructField("LogLevel", StringType(), True),
+        StructField("CodigoUrna", StringType(), True),
+        StructField("Acao", StringType(), True),
         StructField("Mensagem", StringType(), True),
         StructField("Código Verificação", StringType(), True)
     ])
 
-    ingest_path = ingest_path + "/**/*.dat"  # ** procura em todas as subpastas
+    df = spark.read.csv(ingest_path + "/**/*.dat", sep='\t', header=False, schema=schema,  encoding='latin1')
 
-    # Lê os arquivos .dat delimitados por tabulações no Spark
-    df = spark.read.csv(ingest_path, sep='\t', header=False, schema=schema,  encoding='latin1')
+    df = df.withColumn("DataHora", to_timestamp(df["DataHora"], "dd/MM/yyyy HH:mm:ss"))
 
-    # Verificar o esquema inicial e exibir algumas linhas
-    df.printSchema()
-    df.show(5, truncate=False)
-     
-    # Verificar o número de colunas lidas
-    if len(df.columns) == 6:  # O número esperado de colunas
-        # Renomeia as colunas
-        df = df.toDF('Data e Hora', 'Log Level', 'Código Urna', 'Ação', 'Mensagem', 'Código Verificação')
-    else:
-        raise ValueError(f"O número de colunas lidas ({len(df.columns)}) não corresponde ao esperado (6).")
+    # Filtrar os eventos que correspondem a "Eleitor foi habilitado" e "O voto do eleitor foi computado"
+    df_filtered = df.filter(
+        (F.col("Acao") =="VOTA") & 
+        (F.col("DataHora") >= "2024-10-06") &
+        ((F.col("Mensagem").like("%Eleitor foi habilitado%")) | 
+        (F.col("Mensagem").like("%O voto do eleitor foi computado%")))
+    )
 
-    # O restante do processamento continua igual...
-    # Adiciona o nome do arquivo como uma nova coluna
-    #df = df.withColumn('Arquivo', lit(ingest_path))
-    
+    # Usar windowing para identificar o próximo evento "O voto do eleitor foi computado"
+    window = Window.partitionBy("CodigoUrna").orderBy("DataHora")
 
-    # Divide a coluna 'Data e Hora' em 'Data' e 'Hora'
-    #df = df.withColumn('Data', split(df['Data e Hora'], ' ').getItem(0)) \
-     #      .withColumn('Hora', split(df['Data e Hora'], ' ').getItem(1))
+    # Encontrar o próximo evento correspondente
+    df_result = df_filtered.withColumn("Next_Event", F.lead("Mensagem").over(window)) \
+        .withColumn("Next_DataHora", F.lead("DataHora").over(window)) \
+        .filter((F.col("Mensagem").like("%Eleitor foi habilitado%")) & 
+                (F.col("Next_Event").like("%O voto do eleitor foi computado%")))
 
-    # Converte a coluna 'Data' para o formato datetime
-    #df = df.withColumn('Data', to_date(df['Data'], 'dd/MM/yyyy'))
+    # Selecionar as colunas necessárias
+    df_final = df_result.select(
+        "CodigoUrna", 
+        "DataHora", 
+        F.col("Next_DataHora").alias("DataHora_Fim"),
+        (F.unix_timestamp("Next_DataHora") - F.unix_timestamp("DataHora")).alias("TempoSec")  # Diferença em segundos
 
-    df = df.withColumn("DataHora", to_timestamp(df["Data e Hora"], "dd/MM/yyyy HH:mm:ss"))
+    )
+    df_final.write.mode("overwrite").parquet(output_path)
+    df_final.show(5, truncate=False)
+    return df_final.count()
 
-
-    # Filtra as datas superiores ou iguais a 06/10/2024
-    df = df.filter(df['DataHora'] >= '2024-10-06')
-    df.show(5, truncate=False)
-
-    # Inicializar variáveis para armazenar as informações da urna
-    urna_info = {
-        'Turno da UE': None,
-        'Modelo de Urna': None,
-        'Município': None,
-        'Zona Eleitoral': None,
-        'Seção Eleitoral': None
-    }
-
-
-    # Filtramos as mensagens que contém as informações da urna e as coletamos para preenchê-las
-    urna_info_patterns = {
-        'Turno da UE': 'Turno da UE',
-        'Modelo de Urna': 'Modelo de Urna',
-        'Município': 'Município',
-        'Zona Eleitoral': 'Zona Eleitoral',
-        'Seção Eleitoral': 'Seção Eleitoral'
-    }
-
-    for info_key, pattern in urna_info_patterns.items():
-        row = df.filter(df['Mensagem'].contains(pattern)).select('Mensagem').first()
-        if row:
-            urna_info[info_key] = row['Mensagem'].split(':')[-1].strip()
-
-    # Adicionar as informações da urna como colunas no DataFrame
-    for col_name, value in urna_info.items():
-        df = df.withColumn(col_name, lit(value))
-
-    # Filtra apenas as linhas com log level 'INFO' e ação 'VOTA'
-    df_votos = df.filter((df['Log Level'] == 'INFO') & (df['Ação'] == 'VOTA'))
-    df_votos = df_votos.drop('Log Level', 'Código Verificação', 'Ação', 'Código Urna','Data e Hora')
-
-   # window = Window.orderBy("DataHora")
-
-    # Ajuste: usa-se when() corretamente para definir a coluna "Início Voto"
-   # df_votos = df_votos.withColumn("Início Voto", when(col("Mensagem").contains("Eleitor foi habilitado"), lag("DataHora").over(window)))
-
-    # Ajuste: para "Fim Voto" (mesma lógica, usando lead)
-    #df_votos = df_votos.withColumn("Fim Voto", when(col("Mensagem").contains("O voto do eleitor foi computado"), lead("DataHora").over(window)))
-
-
-    # Identificar as linhas de início e fim de votação
-    #df_start = df_votos.filter(df_votos['Mensagem'].contains('Eleitor foi habilitado'))
-    #df_end = df_votos.filter(df_votos['Mensagem'].contains('O voto do eleitor foi computado'))
-
-    # Adicionar um ID para cada voto
-    #df_start = df_start.withColumn("Voto ID", F.row_number().over(Window.orderBy("Data", "Hora")))
-    #df_end = df_end.withColumn("Voto ID", F.row_number().over(Window.orderBy("Data", "Hora")))
-
-    # Juntar as informações de início e fim com base no "Voto ID"
-    """ df_combined = df_start.join(df_end, on="Voto ID", how="inner") \
-                          .select(df_start['Voto ID'], 
-                                  df_start['Data'], 
-                                  df_start['Hora'].alias('Hora Início'), 
-                                  df_start['Mensagem'].alias('Mensagem Início'),
-                                  df_end['Hora'].alias('Hora Fim'), 
-                                  df_end['Mensagem'].alias('Mensagem Fim'))
-
-    # Adiciona as informações da urna ao DataFrame combinado
-    for col_name, value in urna_info.items():
-        df_combined = df_combined.withColumn(col_name, lit(value))
-
-    # Grava o DataFrame resultante no formato Parquet, adicionando ao diretório existente
-    df_combined.write.mode('append').parquet(output_path) """
-    df_votos.write.mode('append').parquet(output_path)
-
- 
-    print(f"Dados gravados no formato Parquet em: {output_path}")
-    df_votos.show(5, truncate=False)
     
 
 def process_log_file(file_path):
