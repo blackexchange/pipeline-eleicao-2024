@@ -69,13 +69,13 @@ def download_file(linkFile,path,file_name):
 
 
 
-def unzip_file(zip_path, extract_to):
+def unzip_file(zip_path, extract_to, filter='jez'):
     print(f"Extraindo arquivos...")
 
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         for file_info in zip_ref.infolist():
             # Verifica se a extensão do arquivo corresponde ao filtro
-            if file_info.filename.endswith("jez"):
+            if file_info.filename.endswith(filter):
                 # Extrai apenas os arquivos que correspondem ao filtro de extensão
                 zip_ref.extract(file_info, extract_to)
 
@@ -89,15 +89,13 @@ def unzip_file(zip_path, extract_to):
 
 
 def extract_log_text(zip_path, extract_to):
-    print(f"Extraindo logs...")
-
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         dir_name = os.path.basename(zip_path)
         dir_name = str(dir_name).split('.')[0]
-        for file_info in zip_ref.infolist():
-            if file_info.filename.endswith(".dat"):
+        #for file_info in zip_ref.infolist():
+            #if file_info.filename.endswith("dat"):
                 # Extrai apenas os arquivos que correspondem ao filtro de extensão
-                zip_ref.extract(f"{extract_to}/{dir_name}")
+        zip_ref.extractall(f"{extract_to}/{dir_name}")
 
     if(os.path.exists(extract_to)):
         return True

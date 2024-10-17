@@ -3,6 +3,8 @@ https://dadosabertos.tse.jus.br/
 
 https://resultados.tse.jus.br/oficial/app/index.html#/eleicao;e=e619;uf=to;mu=73008;ufbu=to;mubu=73008;zn=0007;se=0135;tipo=3/dados-de-urna/boletim-de-urna
 
+COrrespondencias
+https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2024/correspesp/CESP_1t_BA_061020241406.zip
 
 # Data transformations with Python
 This is a collection of _Python_ jobs that are supposed to transform data.
@@ -69,6 +71,7 @@ For each application, please un-ignore the tests and implement the missing logic
 
 ### Election
 Eleição 2024
+$env:JOB = "election"  
 
 
 #### Input

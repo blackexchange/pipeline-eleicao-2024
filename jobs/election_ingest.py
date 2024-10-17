@@ -33,30 +33,30 @@ def download_and_unzip(uf, input_path):
     # Descompactar o arquivo
     try:
         logging.info(f"Descompactando o arquivo {uf}.zip...")
-        ingest.unzip_file(zip_filepath, os.path.join(input_path, "unzipped"))
+        ingest.unzip_file(zip_filepath, input_path + "/unzipped")
     except Exception as e:
         logging.error(f"Erro ao descompactar o arquivo {uf}.zip: {e}")
         sys.exit(1)
 
 # Função para processar os logs extraídos
 def process_extracted_logs(input_path):
-    logs_dir = os.path.join(input_path, "logs")
-    unzipped_dir = os.path.join(input_path, "unzipped")
+    logs_dir = input_path +  "/logs"
+    unzipped_dir = input_path + "/unzipped"
+    
+    #logging.error(f"Extraindo logs {unzipped_dir} para {logs_dir}")
     
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
-
-    logging.info("Extraindo arquivos de log...")
     
     # Iterar sobre os arquivos descompactados
     for filename in os.listdir(unzipped_dir):
-        file_path = os.path.join(unzipped_dir, filename)
+        file_path = unzipped_dir +"/"+ filename
         if os.path.isfile(file_path):
             try:
-                logging.info(f"Extraindo arquivo: {file_path}")
                 ingest.extract_log_text(file_path, logs_dir)
             except Exception as e:
                 logging.error(f"Erro ao extrair o arquivo {file_path}: {e}")
+                
 
 # Função para gerar o DataFrame e salvar em CSV
 # Função para gerar o DataFrame e salvar em CSV incrementalmente
@@ -99,10 +99,9 @@ def clean_up(input_path):
         logging.error(f"Erro ao remover arquivos temporários: {e}")
 
 
-def spar(input_path, output_path):
+def generate_parquet(input_path, output_path):
 
     spark = SparkSession.builder.appName(APP_NAME).getOrCreate()
-    sc = spark.sparkContext
    
     ingest.run(spark, input_path, output_path)
     spark.stop()
@@ -119,11 +118,11 @@ def ler(input_csv_path):
 # Função principal
 def main(input_path, output_path, uf):
     logging.info("Aplicação inicializada: " + APP_NAME)
-    #spar(input_path, output_path)
-    ler("out/")
+    #ler("out/")
     #download_and_unzip(uf, input_path)
-    #process_extracted_logs(input_path)
+    process_extracted_logs(input_path)
     #generate_output_csv(input_path, output_path, uf)
+    generate_parquet(input_path+"/logs", output_path)
    # clean_up(input_path)
     
     logging.info("Aplicação finalizada: " + APP_NAME)
