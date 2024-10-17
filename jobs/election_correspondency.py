@@ -1,8 +1,4 @@
 import logging
-import pandas as pd
-import sys
-import os
-import shutil
 import sys
 from pyspark.sql import SparkSession
 
@@ -24,20 +20,10 @@ def generate_parquet(input_path, output_path):
     ingest.run(spark, input_path + "/unzipped/*.csv", output_path)
     spark.stop()
 
-
-def ler(input_csv_path):
-    SPARK = SparkSession.builder.appName(APP_NAME).getOrCreate()
-    actual = SPARK.read.parquet(input_csv_path)
-    #actual.show(actual.count(), truncate=False)
-
-   # actual.show(truncate=False)
-
-    
 # Função principal
 def main(input_path, output_path, params):
     logging.info("Aplicação inicializada: " + APP_NAME)
     
-    #ler("out/")
     ingest.prepare_files(params, input_path)
     
     generate_parquet(input_path,output_path)
