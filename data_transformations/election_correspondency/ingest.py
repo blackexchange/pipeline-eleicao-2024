@@ -1,6 +1,5 @@
 import pandas as pd
 from typing import List
-from bs4 import BeautifulSoup
 import requests
 import os
 import zipfile
@@ -11,7 +10,6 @@ from typing import List
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import split, col, to_date, lit, to_timestamp, lag, lead, when
-from pyspark.sql.types import StructType, StructField, StringType
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
@@ -20,7 +18,7 @@ def prepare_files(params, input_path):
     param = params.split('_')
     #1t_BA_061020241406
     uf_list = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO','TO','ZZ']
-    uf_list = ['AC','AL','SP']
+  #  uf_list = ['AC','AL','SP']
     for uf in uf_list:
         uf_filename = f"CESP_{param[0]}t_{uf}_{param[1]}.zip"
         url_download = "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2024/correspesp/"
@@ -96,8 +94,8 @@ def run(spark: SparkSession, ingest_path: str, output_path: str) -> int:
 
     df_final = df_filtered.dropDuplicates(["AA_ELEICAO", "CD_PLEITO", "SG_UF", "CD_MUNICIPIO", "NM_MUNICIPIO", "NR_ZONA", "NR_URNA_ESPERADA"])
 
-    df_final.repartition(1).write.mode("overwrite").partitionBy("SG_UF").option("header", "true").csv(output_path + "/csv")
-    df_final.repartition(1).write.mode("overwrite").partitionBy("SG_UF").option("header", "true").parquet(output_path + "/parquet")
+    #df_final.repartition(1).write.mode("overwrite").partitionBy("SG_UF").option("header", "true").csv(output_path + "/csv")
+    df_final.coalesce(1).write.mode("overwrite").partitionBy("SG_UF").option("header", "true").parquet(output_path + "/parquet")
 
     return df_final.count()
 

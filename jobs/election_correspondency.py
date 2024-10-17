@@ -23,6 +23,8 @@ def generate_parquet(input_path, output_path):
 # Função principal
 def main(input_path, output_path, params):
     logging.info("Aplicação inicializada: " + APP_NAME)
+    logging.info("Parametros: " + params)
+
     
     ingest.prepare_files(params, input_path)
     
